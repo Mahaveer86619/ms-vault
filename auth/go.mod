@@ -8,6 +8,12 @@ require (
 )
 
 require (
+	github.com/MuhammadSaim/goavatar v1.1.1 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
+)
+
+require (
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -19,4 +25,5 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
+	gorm.io/gorm v1.31.1
 )

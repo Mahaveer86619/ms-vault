@@ -31,10 +31,10 @@ func (h *HealthHandler) GetHealth(c echo.Context) error {
 		return res.JSON(c)
 	}
 
-	jResp := &views.Success{}
-	jResp.SetStatusCode(http.StatusOK)
-	jResp.SetMessage("Health check successful")
-	jResp.SetData(resp)
-	
-	return jResp.JSON(c)
+	success := &views.Success{}
+	success.SetStatusCode(http.StatusOK)
+	success.SetMessage("Health check successful")
+	success.SetData(resp)
+
+	return success.JSON(c)
 }
