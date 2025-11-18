@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	_ "github.com/lib/pq"
 
@@ -11,6 +12,11 @@ import (
 )
 
 var DB *sql.DB
+
+const (
+	maxRetries = 5
+	retryDelay = 6 * time.Second
+)
 
 func InitDB() {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
@@ -26,10 +32,23 @@ func InitDB() {
 		log.Fatalf("Error opening database connection: %v", err)
 	}
 
-	err = DB.Ping()
-	if err != nil {
-		log.Fatalf("Error connecting to the database: %v", err)
+	for i := 1; i <= maxRetries; i++ {
+		log.Printf("Attempt %d of %d: Pinging database...", i, maxRetries)
+
+		err = DB.Ping()
+		if err == nil {
+			log.Println("Successfully connected to the database!")
+			return
+		}
+
+		log.Printf("Failed to connect to database (attempt %d): %v", i, err)
+
+		if i < maxRetries {
+			log.Printf("Retrying in %v...", retryDelay)
+			time.Sleep(retryDelay)
+		}
 	}
 
-	log.Println("Successfully connected to the database!")
+	totalTime := (maxRetries - 1) * retryDelay
+	log.Fatalf("Failed to connect to the database after %d attempts (over ~%v). Last error: %v", maxRetries, totalTime.Round(time.Second), err)
 }

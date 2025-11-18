@@ -84,7 +84,7 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.HandlerFunc {
 		if time.Now().After(client.reset) {
 			client.count = 0
 			client.reset = time.Now().Add(rl.window)
-			log.Printf("Rate limit window reset for IP: %s. New window ends at: %v", ip, client.reset.Format(time.RFC3339))
+			log.Printf("Rate limit window reset for IP: %s. New window ends at: %v", ip, client.reset.Format(time.Kitchen))
 		}
 
 		if client.count >= rl.limit {
