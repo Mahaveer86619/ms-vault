@@ -16,6 +16,9 @@ type Config struct {
 	DBUser     string
 	DBPassword string
 	DBName     string
+
+	// Auth
+	JWTSecret string
 }
 
 var GConfig *Config
@@ -35,6 +38,9 @@ func InitConfig() {
 		DBUser:     getEnv("DB_USER"),
 		DBPassword: getEnv("DB_PASSWORD"),
 		DBName:     getEnv("DB_NAME"),
+
+		// JWT config
+		JWTSecret:  getEnv("JWT_SECRET"),
 	}
 }
 

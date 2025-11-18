@@ -1,21 +1,21 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"time"
 
-	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"github.com/Mahaveer86619/ms/auth/pkg/config"
 )
 
-var DB *sql.DB
+var DB *gorm.DB
 
 const (
-	maxRetries = 5
-	retryDelay = 6 * time.Second
+	maxRetries = 10
+	retryDelay = 2 * time.Second
 )
 
 func InitDB() {
@@ -27,18 +27,25 @@ func InitDB() {
 		config.GConfig.DBName,
 	)
 
-	DB, err := sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatalf("Error opening database connection: %v", err)
-	}
+	var err error
 
 	for i := 1; i <= maxRetries; i++ {
-		log.Printf("Attempt %d of %d: Pinging database...", i, maxRetries)
+		log.Printf("Attempt %d of %d: Connecting to database...", i, maxRetries)
 
-		err = DB.Ping()
+		DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
 		if err == nil {
-			log.Println("Successfully connected to the database!")
-			return
+			sqlDB, pingErr := DB.DB()
+			if pingErr == nil {
+				if err := sqlDB.Ping(); err == nil {
+					log.Println("Successfully connected to the database via GORM!")
+					return
+				} else {
+					log.Println(fmt.Errorf("ping failed: %v", err))
+				}
+			} else {
+				err = fmt.Errorf("failed to get generic db interface: %v", pingErr)
+			}
 		}
 
 		log.Printf("Failed to connect to database (attempt %d): %v", i, err)
@@ -49,6 +56,5 @@ func InitDB() {
 		}
 	}
 
-	totalTime := (maxRetries - 1) * retryDelay
-	log.Fatalf("Failed to connect to the database after %d attempts (over ~%v). Last error: %v", maxRetries, totalTime.Round(time.Second), err)
+	log.Fatalf("Failed to connect to the database after %d attempts. Last error: %v", maxRetries, err)
 }
