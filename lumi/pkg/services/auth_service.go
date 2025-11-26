@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Mahaveer86619/ms/auth/pkg/db"
-	"github.com/Mahaveer86619/ms/auth/pkg/models"
-	"github.com/Mahaveer86619/ms/auth/pkg/utils"
-	"github.com/Mahaveer86619/ms/auth/pkg/views"
+	"github.com/Mahaveer86619/lumi/pkg/db"
+	"github.com/Mahaveer86619/lumi/pkg/models"
+	"github.com/Mahaveer86619/lumi/pkg/utils"
+	"github.com/Mahaveer86619/lumi/pkg/views"
 	"gorm.io/gorm"
 )
 
@@ -28,7 +28,7 @@ func NewAuthService(avatarService *AvatarService) *AuthService {
 
 func (s *AuthService) RegisterUser(username, email, password string) (*views.AuthResponse, error) {
 	var existingUser models.UserProfile
-	err := db.DB.Where("username = ?", username).Or("email = ?", email).First(&existingUser).Error
+	err := db.DB.Where("username = ?", username).First(&existingUser).Error
 
 	if err == nil {
 		return nil, errors.New("username already exists")

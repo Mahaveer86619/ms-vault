@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Mahaveer86619/ms/auth/pkg/utils"
-	"github.com/Mahaveer86619/ms/auth/pkg/views"
+	"github.com/Mahaveer86619/lumi/pkg/utils"
+	"github.com/Mahaveer86619/lumi/pkg/views"
 	"github.com/labstack/echo/v4"
 )
 

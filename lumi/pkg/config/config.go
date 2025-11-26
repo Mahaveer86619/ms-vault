@@ -17,8 +17,10 @@ type Config struct {
 	DBPassword string
 	DBName     string
 
+	// jwt
+	JWTSecret string
+
 	// ms
-	AuthServiceURL string
 	WahaServiceURL string
 	WahaAPIKey     string
 }
@@ -41,8 +43,10 @@ func InitConfig() {
 		DBPassword: getEnv("DB_PASSWORD"),
 		DBName:     getEnv("DB_NAME"),
 
+		// jwt
+		JWTSecret: getEnv("JWT_SECRET"),
+
 		// ms
-		AuthServiceURL: getEnv("AUTH_SERVICE_URL"),
 		WahaServiceURL: getEnv("WAHA_SERVICE_URL"),
 		WahaAPIKey:     getEnv("WAHA_API_KEY"),
 	}

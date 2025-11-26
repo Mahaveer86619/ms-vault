@@ -17,6 +17,7 @@ import (
 )
 
 var (
+	authLimiter *mid.RateLimiter
 	apiLimiter  *mid.RateLimiter
 )
 
@@ -24,7 +25,8 @@ func initSystem() {
 	config.InitConfig()
 	db.InitDB()
 
-	apiLimiter = mid.NewRateLimiter(10, 1*time.Minute)  // 10 req in 1 min
+	authLimiter = mid.NewRateLimiter(10, 1*time.Minute) // 10 req in 1 min
+	apiLimiter = mid.NewRateLimiter(60, 1*time.Minute)  // 10 req in 1 min
 }
 
 func StartServer() {
@@ -47,9 +49,27 @@ func StartServer() {
 
 func registerServices(e *echo.Echo) {
 
-	// API group
-	apiGroup := e.Group("/api/v1")
+	// --- Services Initialization ---
+	healthService := services.NewHealthService()
+	avatarService := services.NewAvatarService()
+	authService := services.NewAuthService(avatarService)
+	userService := services.NewUserService()
+	wahaService := services.NewWahaService()
 
+	// --- Route Groups & Middleware ---
+	// Auth Group (Public, Rate Limited) -> /auth
+	authGroup := e.Group("/auth")
+	authGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			rateLimitHandler := authLimiter.RateLimitMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { next(c) }))
+			rateLimitHandler.ServeHTTP(c.Response(), c.Request())
+			return nil
+		}
+	})
+	handlers.NewAuthHandler(authGroup, authService)
+
+	// API v1 Group (Rate Limited) -> /api/v1
+	apiGroup := e.Group("/api/v1")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			rateLimitHandler := apiLimiter.RateLimitMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { next(c) }))
@@ -58,11 +78,15 @@ func registerServices(e *echo.Echo) {
 		}
 	})
 
-	// Services
-	healthService := services.NewHealthService()
-	wahaService := services.NewWahaService()
+	handlers.NewHealthHandler(apiGroup, healthService)
+	handlers.NewAvatarHandler(apiGroup, avatarService)
+
+	protectedGroup := apiGroup.Group("")
+	protectedGroup.Use(mid.JWTMiddleware)
+
+	handlers.NewUserHandler(protectedGroup, userService)
 
 	// Handlers
-	handlers.NewHealthHandler(apiGroup, healthService)
-	handlers.NewWahaHandler(apiGroup, wahaService)
+	wahaGroup := protectedGroup.Group("/whatsapp")
+	handlers.NewWahaHandler(wahaGroup, wahaService)
 }

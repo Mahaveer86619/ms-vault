@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/Mahaveer86619/ms/auth/pkg/config"
-	"github.com/Mahaveer86619/ms/auth/pkg/db"
-	"github.com/Mahaveer86619/ms/auth/pkg/models"
+	"github.com/Mahaveer86619/lumi/pkg/config"
+	"github.com/Mahaveer86619/lumi/pkg/db"
+	"github.com/Mahaveer86619/lumi/pkg/models"
 	"github.com/labstack/gommon/log"
 )
 
@@ -18,6 +18,7 @@ func main() {
 	tables := []interface{}{
 		&models.UserProfile{},
 		&models.UserSecurity{},
+		&models.WhatsAppSession{},
 	}
 
 	log.Info("Running AutoMigrate...")

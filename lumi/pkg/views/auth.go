@@ -1,8 +1,8 @@
 package views
 
 import (
-	"github.com/Mahaveer86619/ms/auth/pkg/models"
-	"github.com/Mahaveer86619/ms/auth/pkg/utils"
+	"github.com/Mahaveer86619/lumi/pkg/models"
+	"github.com/Mahaveer86619/lumi/pkg/utils"
 )
 
 type AuthRegisterUser struct {

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Mahaveer86619/ms/auth/pkg/config"
+	"github.com/Mahaveer86619/lumi/pkg/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 

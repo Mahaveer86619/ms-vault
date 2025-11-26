@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/Mahaveer86619/ms/auth/pkg/services"
+	"github.com/Mahaveer86619/lumi/pkg/services"
 	"github.com/labstack/echo/v4"
 )
 
