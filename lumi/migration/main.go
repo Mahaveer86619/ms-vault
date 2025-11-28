@@ -18,6 +18,7 @@ func main() {
 	tables := []interface{}{
 		&models.UserProfile{},
 		&models.WhatsAppSession{},
+		&models.RegisteredChat{},
 	}
 
 	log.Info("Running AutoMigrate...")

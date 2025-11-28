@@ -1,0 +1,21 @@
+services:
+  waha:
+    container_name: ms-waha-test
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    networks:
+      - default
+
+volumes:
+  ms_db_data:
+
+networks:
+  default:
+    name: ms-network-test
+    driver: bridge

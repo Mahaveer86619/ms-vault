@@ -11,6 +11,7 @@ import (
 	"github.com/Mahaveer86619/lumi/pkg/handlers"
 	mid "github.com/Mahaveer86619/lumi/pkg/middleware"
 	"github.com/Mahaveer86619/lumi/pkg/services"
+	"github.com/Mahaveer86619/lumi/pkg/services/connections"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -49,11 +50,12 @@ func StartServer() {
 
 func registerServices(e *echo.Echo) {
 	// --- Services Initialization ---
-	healthService := services.NewHealthService()
 	avatarService := services.NewAvatarService()
 	authService := services.NewAuthService(avatarService)
-	wahaService := services.NewWahaService()
-	userService := services.NewUserService(wahaService)
+	wahaService := connections.NewWahaService()
+	userService := services.NewUserService()
+	healthService := services.NewHealthService(wahaService)
+	chatService := services.NewChatService(wahaService)
 
 	// --- Route Groups & Middleware ---
 	authGroup := e.Group("/auth")
@@ -78,11 +80,17 @@ func registerServices(e *echo.Echo) {
 	protectedGroup.Use(mid.JWTMiddleware)
 
 	wahaGroup := protectedGroup.Group("/whatsapp")
+	chatGroup := protectedGroup.Group("/chats")
 
 	// Handlers
 	handlers.NewHealthHandler(apiGroup, healthService)
 	handlers.NewAvatarHandler(apiGroup, avatarService)
 	handlers.NewAuthHandler(authGroup, authService)
 	handlers.NewUserHandler(protectedGroup, userService)
-	handlers.NewWahaHandler(wahaGroup, wahaService)
+	handlers.NewChatHandler(chatGroup, chatService)
+
+	wahaHandler := handlers.NewWahaHandler(wahaGroup, wahaService, chatService)
+
+	// Webhook
+	apiGroup.POST("/webhook", wahaHandler.HandleWebhook)
 }

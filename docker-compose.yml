@@ -11,10 +11,11 @@ services:
     depends_on:
       ms-db:
         condition: service_healthy
-      waha:
-        condition: service_started
+      # waha:
+      #   condition: service_started
     networks:
       - default
+      - waha_net
 
   ms-db:
     image: postgres:latest
@@ -36,21 +37,21 @@ services:
     networks:
       - default
 
-  waha:
-    container_name: ms-waha
-    build:
-      context: ./waha
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file:
-      - ./waha/.env
-    ports:
-      - "3000:3000"
-    depends_on:
-      ms-db:
-        condition: service_healthy
-    networks:
-      - default
+  # waha:
+  #   container_name: ms-waha
+  #   build:
+  #     context: ./waha
+  #     dockerfile: Dockerfile
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ./waha/.env
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     ms-db:
+  #       condition: service_healthy
+  #   networks:
+  #     - default
 
 volumes:
   ms_db_data:
@@ -59,3 +60,6 @@ networks:
   default:
     name: ms-network
     driver: bridge
+  waha_net:
+    external: true
+    name: ms-network-test

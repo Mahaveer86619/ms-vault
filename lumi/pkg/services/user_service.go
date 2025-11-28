@@ -8,14 +8,10 @@ import (
 	"github.com/Mahaveer86619/lumi/pkg/views"
 )
 
-type UserService struct {
-	ws *WahaService
-}
+type UserService struct {}
 
-func NewUserService(ws *WahaService) *UserService {
-	return &UserService{
-		ws: ws,
-	}
+func NewUserService() *UserService {
+	return &UserService{}
 }
 
 func (us UserService) GetUserDetails(id uint) (*views.UserDetailsResponse, error) {

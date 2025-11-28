@@ -6,18 +6,18 @@ import (
 	"time"
 
 	"github.com/Mahaveer86619/lumi/pkg/db"
+	"github.com/Mahaveer86619/lumi/pkg/services/connections"
 	"github.com/Mahaveer86619/lumi/pkg/views"
 )
 
 type HealthService struct {
-	wahaService *WahaService
-
+	wahaClient connections.WahaClient
 	httpClient *http.Client
 }
 
-func NewHealthService() *HealthService {
+func NewHealthService(wc connections.WahaClient) *HealthService {
 	return &HealthService{
-		wahaService: NewWahaService(),
+		wahaClient: wc,
 		httpClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -46,7 +46,7 @@ func (h *HealthService) GetHealth() (*views.HealthResponse, error) {
 }
 
 func (h *HealthService) checkWahaService() views.Health {
-	err := h.wahaService.PingWaha()
+	err := h.wahaClient.Ping()
 	if err != nil {
 		return views.Health{
 			Name:    "waha-service",
