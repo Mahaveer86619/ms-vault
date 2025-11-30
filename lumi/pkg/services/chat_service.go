@@ -1,6 +1,8 @@
 package services
 
 import (
+	"log"
+
 	"github.com/Mahaveer86619/lumi/pkg/db"
 	"github.com/Mahaveer86619/lumi/pkg/models"
 	connModel "github.com/Mahaveer86619/lumi/pkg/models/connections"
@@ -28,6 +30,11 @@ func (s *ChatService) GetRemoteGroups() ([]connModel.GroupInfo, error) {
 func (s *ChatService) GetRegisteredChats() ([]models.RegisteredChat, error) {
 	var chats []models.RegisteredChat
 	result := db.DB.Find(&chats)
+
+	if len(chats) == 0 {
+		log.Println("0 chats registered")
+		chats = []models.RegisteredChat{}
+	}
 	return chats, result.Error
 }
 

@@ -18,7 +18,7 @@ services:
       - waha_net
 
   ms-db:
-    image: postgres:latest
+    image: postgres:17
     container_name: ms-db
     environment:
       POSTGRES_USER: ms-auth

@@ -31,9 +31,8 @@ type Config struct {
 var GConfig *Config
 
 func InitConfig() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, relying on system environment variables")
 	}
 
 	GConfig = &Config{
@@ -58,9 +57,12 @@ func InitConfig() {
 	}
 }
 
-func getEnv(key string) string {
+func getEnv(key string, defaultVal ...string) string {
 	val := os.Getenv(key)
 	if val == "" {
+		if len(defaultVal) > 0 {
+			return defaultVal[0]
+		}
 		log.Fatalf("Key %s not found in .env file", key)
 	}
 

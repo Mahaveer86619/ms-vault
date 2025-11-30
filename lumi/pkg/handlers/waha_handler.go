@@ -73,7 +73,18 @@ func (h *WahaHandler) HandleWebhook(c echo.Context) error {
 		if h.chatService.IsChatAllowed(chatID) {
 			// This is a message in a registered chat -> Track it!
 			log.Printf("[TRACKED MESSAGE] Chat: %s, Body: %s, Sender: %s", chatID, msg.Body, msg.From)
-			// TODO: Add logic here to store the message in the database or trigger other workflows
+			go func(targetChat, text string) {
+				// Check if text is empty (e.g. image messages without caption)
+				if text == "" {
+					text = "[Media Message received]"
+				}
+
+				reply := "Echo: " + text
+				_, err := h.wahaService.SendText(targetChat, reply)
+				if err != nil {
+					log.Printf("Failed to send echo: %v", err)
+				}
+			}(chatID, msg.Body)
 		}
 	}
 
