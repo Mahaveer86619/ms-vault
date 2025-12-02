@@ -2,17 +2,18 @@ package bot
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/Mahaveer86619/lumi/pkg/config"
-	"github.com/Mahaveer86619/lumi/pkg/db"
 	modelConnections "github.com/Mahaveer86619/lumi/pkg/models/connections"
 	"github.com/Mahaveer86619/lumi/pkg/services"
 	"github.com/Mahaveer86619/lumi/pkg/services/connections"
 	"google.golang.org/genai"
 )
+
+const SessionTimeout = 5 * time.Minute
 
 type BotService struct {
 	botClient   *genai.Client
@@ -39,25 +40,23 @@ func NewBotService(wahaClient connections.WahaClient, chatService *services.Chat
 }
 
 func (b *BotService) ProcessMessage(msg modelConnections.WAMessage) {
+	if msg.FromMe && msg.Source == "api" {
+		return
+	}
+
 	chatID := msg.From
 	if msg.FromMe {
 		chatID = msg.To
-	}
-
-	text := strings.TrimSpace(msg.Body)
-	if text == "" {
-		return
-	}
-
-	if msg.FromMe && msg.Source == "api" {
-		return
 	}
 
 	if strings.Contains(chatID, "status") || strings.Contains(chatID, "broadcast") {
 		return
 	}
 
-	b.chatService.SaveMessage(chatID, "user", text)
+	text := strings.TrimSpace(msg.Body)
+	if text == "" {
+		return
+	}
 
 	if msg.From == msg.To && !b.chatService.IsChatAllowed(chatID) {
 		log.Printf("Auto-registering self-chat: %s", chatID)
@@ -74,32 +73,55 @@ func (b *BotService) ProcessMessage(msg modelConnections.WAMessage) {
 		return
 	}
 
-	trigger := "@lumi"
-	isTrigger := strings.Contains(strings.ToLower(text), trigger)
+	if chat.IsBotActive && time.Since(chat.UpdatedAt) > SessionTimeout {
+		log.Printf("Session timed out for %s", chatID)
+		chat.IsBotActive = false
+		b.chatService.UpdateRegisteredChat(chat)
+		b.chatService.ClearHistory(chatID)
+		b.wahaClient.SendText(chatID, "💤 LumiThread timed out due to inactivity.")
+	}
+
+	triggerKeyword := "@lumi"
+	lowerText := strings.ToLower(text)
+	isTrigger := strings.Contains(lowerText, triggerKeyword)
+	isExit := strings.Contains(lowerText, "bye") || strings.Contains(lowerText, "exit") || strings.Contains(lowerText, "stop")
+
+	if chat.IsBotActive && isExit {
+		chat.IsBotActive = false
+		b.chatService.UpdateRegisteredChat(chat)
+		b.chatService.ClearHistory(chatID)
+		b.wahaClient.SendText(chatID, "LumiThread ended. Data cleared. 👋")
+		return
+	}
 
 	if !chat.IsBotActive {
 		if isTrigger {
 			chat.IsBotActive = true
 			b.chatService.UpdateRegisteredChat(chat)
-			b.replyAndSave(chatID, "Hello! I'm Lumi. Our session has started. \n\nType *bye*, *exit*, or *stop* to end the session.")
+			b.chatService.ClearHistory(chatID)
 
-			cleanText := strings.TrimSpace(strings.ReplaceAll(text, trigger, ""))
+			cleanText := strings.TrimSpace(strings.ReplaceAll(text, triggerKeyword, ""))
+
 			if cleanText != "" {
+				b.chatService.SaveMessage(chatID, "user", cleanText)
 				b.generateAIResponse(chatID, cleanText)
+			} else {
+				b.replyAndSave(chatID, "Hey! LumiThread started. 🧠\nI'm listening. Type *bye* to exit.")
 			}
 		}
 		return
 	}
 
-	lowerText := strings.ToLower(text)
-	if lowerText == "bye" || lowerText == "exit" || lowerText == "stop" || lowerText == "end session" {
-		chat.IsBotActive = false
-		db.DB.Save(&chat)
-		b.replyAndSave(chatID, "Session ended. 👋 Call me again with @lumi.")
-		return
+	b.chatService.UpdateRegisteredChat(chat)
+
+	b.chatService.SaveMessage(chatID, "user", text)
+
+	cleanPrompt := text
+	if isTrigger {
+		cleanPrompt = strings.TrimSpace(strings.ReplaceAll(text, triggerKeyword, ""))
 	}
 
-	b.generateAIResponse(chatID, text)
+	b.generateAIResponse(chatID, cleanPrompt)
 }
 
 func (b *BotService) generateAIResponse(chatID, currentText string) {
@@ -109,21 +131,21 @@ func (b *BotService) generateAIResponse(chatID, currentText string) {
 	}
 
 	var parts []*genai.Content
+
 	for _, h := range history {
 		prefix := "User: "
 		if h.Role == "model" {
 			prefix = "Lumi: "
 		}
-		prompt := prefix + h.Content + fmt.Sprintf("current prompt: %s", currentText)
 
+		prompt := prefix + h.Content
 		parts = append(parts, genai.Text(prompt)...)
 	}
 
-	sysPrompt := `You are Lumi, a smart and helpful WhatsApp assistant. 
-    - Format your responses using WhatsApp Markdown (e.g., *bold*, _italics_, ~strike~, ` + "`code`" + `).
-    - Keep responses concise and easy to read on mobile screens.
-    - If the user asks for code, wrap it in code blocks.
-    - Be friendly but professional.`
+	sysPrompt := `You are Lumi, a sarcastic but helpful AI assistant living in WhatsApp.
+    - You are currently in an active 'LumiThread'.
+    - Your responses should be concise and formatted for mobile reading.
+    - Use WhatsApp markdown (*bold*, _italic_, ~strike~, ` + "`code`" + `).`
 
 	resp, err := b.botClient.Models.GenerateContent(
 		context.Background(),
@@ -136,7 +158,7 @@ func (b *BotService) generateAIResponse(chatID, currentText string) {
 
 	if err != nil {
 		log.Printf("Gemini Error: %v", err)
-		b.replyAndSave(chatID, "⚠️ *Error*: I'm having trouble thinking right now. Please try again.")
+		b.replyAndSave(chatID, "⚠️ *Error*: My brain connection timed out.")
 		return
 	}
 

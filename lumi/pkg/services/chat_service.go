@@ -82,10 +82,18 @@ func (s *ChatService) SaveMessage(chatID, role, content string) error {
 	return db.DB.Create(&msg).Error
 }
 
+func (s *ChatService) ClearHistory(chatID string) error {
+	return db.DB.Where("chat_id = ?", chatID).Unscoped().Delete(&models.ChatMessage{}).Error
+}
+
 func (s *ChatService) GetChatHistory(chatID string, limit int) ([]models.ChatMessage, error) {
 	var messages []models.ChatMessage
 	if err := db.DB.Where("chat_id = ?", chatID).Order("created_at desc").Limit(limit).Find(&messages).Error; err != nil {
 		return nil, err
+	}
+
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
 	}
 
 	return messages, nil

@@ -64,7 +64,7 @@ func (h *WahaHandler) HandleWebhook(c echo.Context) error {
 			}()
 		}
 
-	case "message":
+	case "message.any":
 		var msg connections.WAMessage
 		if err := json.Unmarshal(webhook.Payload, &msg); err != nil {
 			log.Printf("Failed to unmarshal message payload: %v", err)
@@ -89,7 +89,6 @@ func (h *WahaHandler) HandleWebhook(c echo.Context) error {
 		isSelfChat := msg.From == msg.To
 
 		if h.chatService.IsChatAllowed(chatID) || isSelfChat {
-			log.Printf("[PROCESSING MESSAGE] Chat: %s, IsSelf: %v", chatID, isSelfChat)
 			go h.botService.ProcessMessage(msg)
 		}
 	}
